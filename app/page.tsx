@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import axios from "axios";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -30,8 +31,10 @@ import {
   Download,
   Filter,
   MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { cn } from "@/lib/utils"; // Assuming you have this from shadcn
+import { cn } from "@/lib/utils";
 
 type SafetyStock = {
   min: number;
@@ -45,6 +48,7 @@ type Item = {
   material: string;
   description: string;
   branch: string;
+  plant: number;
   abc: string;
   stock: number;
   netAvl: number;
@@ -70,118 +74,95 @@ export default function SparesDashboard() {
   const [tableDensity, setTableDensity] = useState<"default" | "compact">(
     "default",
   );
+  const [selectedPlant, setSelectedPlant] = useState("all");
+  const [pageSize, setPageSize] = useState("10");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const items: Item[] = [
-    {
-      id: 1,
-      material: "FL221ELDLK010",
-      description: "FL221ELDLK010",
-      branch: "Pune",
-      abc: "A",
-      stock: 60,
-      netAvl: 60,
-      safetyStock: { min: 90, max: 110, fill: 40, color: "bg-orange-500" },
-      weekly: 81.41,
-      avg6M: 86.8,
-      lySm: 349,
-      sugQty: 56,
-      value: "₹16.8K",
-      status: "Draft",
-      trend: true,
-    },
-    // ... (keep your other 4 items, or add more for realism)
-    {
-      id: 2,
-      material: "UF211ELUNV170",
-      description: "UF211ELUNV170",
-      branch: "Pune",
-      abc: "A",
-      stock: 1,
-      netAvl: 1,
-      safetyStock: { min: 1, max: 5, fill: 20, color: "bg-red-500" },
-      weekly: 3.29,
-      avg6M: 14.2,
-      lySm: 1,
-      sugQty: 4,
-      value: "₹15.5K",
-      status: "Draft",
-      trend: true,
-    },
-    {
-      id: 3,
-      material: "CD211ELEHT010",
-      description: "CD211ELEHT010",
-      branch: "Mumbai",
-      abc: "A",
-      stock: 6,
-      netAvl: 6,
-      safetyStock: { min: 5, max: 23, fill: 25, color: "bg-red-500" },
-      weekly: 15.89,
-      avg6M: 62.2,
-      lySm: 68,
-      sugQty: 17,
-      value: "₹11.8K",
-      status: "Draft",
-      trend: false,
-    },
-    {
-      id: 4,
-      material: "UF921OTKIT030",
-      description: "UF921OTKIT030",
-      branch: "Mumbai",
-      abc: "A",
-      stock: 4,
-      netAvl: 4,
-      safetyStock: { min: 4, max: 10, fill: 40, color: "bg-orange-500" },
-      weekly: 6.79,
-      avg6M: 7,
-      lySm: 29,
-      sugQty: 6,
-      value: "₹7.9K",
-      status: "Draft",
-      trend: true,
-    },
-    {
-      id: 5,
-      material: "UF320MXDDA090",
-      description: "UF320MXDDA090",
-      branch: "Pune",
-      abc: "A",
-      stock: 2,
-      netAvl: 2,
-      safetyStock: { min: 2, max: 3, fill: 60, color: "bg-amber-500" },
-      weekly: 1.96,
-      avg6M: 8.3,
-      lySm: 1,
-      sugQty: 1,
-      value: "₹7.4K",
-      status: "Draft",
-      trend: false,
-    },
-  ];
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Filtering & Sorting
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        const res = await axios.get("http://localhost:8000/api/spares/data");
+
+        const formattedData: Item[] = res.data.data.map((item: any) => ({
+          id: item.id,
+          material: item.material,
+          description: item.description,
+          branch: item.branch,
+          plant: item.plant,
+          abc: item.abc,
+          stock: item.stock,
+          netAvl: item.netavl,
+          weekly: item.weekly,
+          avg6M: item.avg6m,
+          lySm: item.lysm,
+          sugQty: item.sugqty,
+          value: item.value,
+          status: item.status,
+          trend: item.trend,
+
+          safetyStock: {
+            min: Math.round(item.avg6m * 0.5),
+            max: Math.round(item.avg6m),
+            fill: Math.min(
+              Math.round((item.stock / (item.avg6m || 1)) * 100),
+              100,
+            ),
+            color:
+              item.stock <= 5
+                ? "bg-red-500"
+                : item.stock <= 15
+                  ? "bg-orange-500"
+                  : "bg-green-500",
+          },
+        }));
+
+        setItems(formattedData);
+      } catch (err) {
+        setError("Failed to fetch spares data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const filteredAndSortedItems = useMemo(() => {
     let result = [...items];
 
-    // Search
+    // SEARCH
     const q = searchQuery.toLowerCase().trim();
+
     if (q) {
       result = result.filter((item) =>
-        [item.material, item.description, item.branch].some((field) =>
-          field.toLowerCase().includes(q),
-        ),
+        [
+          item.material,
+          item.description,
+          item.branch,
+          item.plant.toString(),
+        ].some((field) => field.toLowerCase().includes(q)),
       );
     }
 
-    // Branch filter
+    // Branch Filter
     if (selectedBranch !== "all") {
       result = result.filter((item) => item.branch === selectedBranch);
     }
 
-    // ABC filter
+    // ABC Filter
     if (selectedABC !== "all") {
       result = result.filter((item) => item.abc === selectedABC);
+    }
+
+    // Plant Filter
+    if (selectedPlant !== "all") {
+      result = result.filter((item) => item.plant.toString() === selectedPlant);
     }
 
     // Sorting
@@ -189,14 +170,39 @@ export default function SparesDashboard() {
       result.sort((a, b) => {
         const aVal = a[sortConfig.key];
         const bVal = b[sortConfig.key];
+
         if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+
         return 0;
       });
     }
 
     return result;
-  }, [items, searchQuery, selectedBranch, selectedABC, sortConfig]);
+  }, [
+    items,
+    searchQuery,
+    selectedBranch,
+    selectedABC,
+    selectedPlant,
+    sortConfig,
+  ]);
+
+  const totalPages = Math.ceil(
+    filteredAndSortedItems.length / Number(pageSize),
+  );
+
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * Number(pageSize);
+    const end = start + Number(pageSize);
+
+    return filteredAndSortedItems.slice(start, end);
+  }, [filteredAndSortedItems, currentPage, pageSize]);
+
+  /* RESET PAGE WHEN FILTERS CHANGE */
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedBranch, selectedABC, selectedPlant, pageSize]);
 
   const handleSort = (key: keyof Item) => {
     if (sortConfig?.key === key) {
@@ -246,6 +252,71 @@ export default function SparesDashboard() {
     </div>
   );
 
+  const highPriorityItems = useMemo(() => {
+    return filteredAndSortedItems.filter(
+      (item) => item.abc === "A" || item.abc === "B",
+    );
+  }, [filteredAndSortedItems]);
+
+  const highPriorityCount = highPriorityItems.length;
+
+  const highPriorityValue = highPriorityItems.reduce((sum, item) => {
+    const numeric = Number(item.value.replace(/[₹K,L,]/g, ""));
+    return sum + numeric;
+  }, 0);
+
+  const summary = useMemo(() => {
+    const data = filteredAndSortedItems;
+
+    const totalItems = data.length;
+
+    const needOrders = data.filter((item) => item.sugQty > 0).length;
+
+    const orderValue = data.reduce((sum, item) => {
+      const numeric = Number(
+        item.value.replace("₹", "").replace("K", "").replace(/,/g, ""),
+      );
+
+      return item.sugQty > 0 ? sum + numeric : sum;
+    }, 0);
+
+    const avgDaysOfCover =
+      data.length > 0
+        ? (
+            data.reduce((sum, item) => {
+              const daily = Math.max(item.avg6M, item.lySm) / 30;
+
+              const cover = daily > 0 ? item.netAvl / daily : 0;
+
+              return sum + cover;
+            }, 0) / data.length
+          ).toFixed(1)
+        : "0";
+
+    const overrides = data.filter((item) => item.status === "Override").length;
+
+    const confirmedPOs = data.filter(
+      (item) => item.status === "Confirmed",
+    ).length;
+
+    return {
+      totalItems,
+      needOrders,
+      orderValue,
+      avgDaysOfCover,
+      overrides,
+      confirmedPOs,
+    };
+  }, [filteredAndSortedItems]);
+
+  if (loading) {
+    return <div className="p-10">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="p-10 text-red-500">{error}</div>;
+  }
+
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gray-50/70 dark:bg-zinc-950 p-4 md:p-6 lg:p-8 font-sans">
       <div className="max-w-[1680px] mx-auto space-y-6">
@@ -275,32 +346,44 @@ export default function SparesDashboard() {
           {[
             {
               label: "Total Items",
-              value: "15,458",
-              sub: "125 need orders",
+              // value: "15,458",
+              value: summary.totalItems.toLocaleString(),
+              // sub: "125 items need orders",
+              sub: `${summary.needOrders} items need orders`,
               color: "",
             },
             {
               label: "Order Value",
-              value: "₹2.4L",
-              sub: "for 125 items",
+              // value: "₹2.4L",
+              value: `₹${summary.orderValue.toFixed(1)}K`,
+              // sub: "for 125 items",
+              sub: `for ${summary.needOrders} items`,
               color: "text-emerald-600",
             },
             {
               label: "High Priority (A+B)",
-              value: "11,336",
-              sub: "",
+              value: highPriorityCount.toString(),
+              sub: "Critical items",
               color: "text-red-600",
             },
             {
               label: "Avg Days of Cover",
-              value: "7.2",
+              // value: "7.2",
+              value: summary.avgDaysOfCover,
               sub: "Target: 5-10",
               color: "",
             },
-            { label: "Overrides", value: "0", sub: "", color: "text-blue-600" },
+            {
+              label: "Overrides",
+              // value: "0",
+              value: summary.overrides.toString(),
+              sub: "",
+              color: "text-blue-600",
+            },
             {
               label: "Confirmed POS",
-              value: "0",
+              // value: "0",
+              value: summary.confirmedPOs.toString(),
               sub: "",
               color: "text-emerald-600",
             },
@@ -365,14 +448,33 @@ export default function SparesDashboard() {
               />
             </div>
 
-            <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-              <SelectTrigger className="w-[140px] h-10">
-                <SelectValue placeholder="Branch" />
+            <Select value={selectedPlant} onValueChange={setSelectedPlant}>
+              <SelectTrigger className="w-[130px] h-10">
+                <SelectValue placeholder="Plant" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All Plants</SelectItem>
+                <SelectItem value="5502">5502</SelectItem>
+                <SelectItem value="5505">5505</SelectItem>
+                <SelectItem value="5513">5513</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+              <SelectTrigger className="w-[150px] h-10">
+                <SelectValue placeholder="Branch" />
+              </SelectTrigger>
+
+              <SelectContent>
                 <SelectItem value="all">All Branches</SelectItem>
-                <SelectItem value="Pune">Pune</SelectItem>
-                <SelectItem value="Mumbai">Mumbai</SelectItem>
+
+                {[...new Set(items.map((item) => item.branch))]
+                  .sort()
+                  .map((branch) => (
+                    <SelectItem key={branch} value={branch}>
+                      {branch}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
@@ -384,6 +486,7 @@ export default function SparesDashboard() {
                 <SelectItem value="all">All ABC</SelectItem>
                 <SelectItem value="A">A</SelectItem>
                 <SelectItem value="B">B</SelectItem>
+                <SelectItem value="C">C</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -427,6 +530,7 @@ export default function SparesDashboard() {
                   {[
                     { key: "material", label: "Material" },
                     { key: "description", label: "Description" },
+                    { key: "plant", label: "Plant" },
                     { key: "branch", label: "Branch" },
                     { key: "abc", label: "ABC" },
                     { key: "stock", label: "Stock", align: "right" },
@@ -465,7 +569,8 @@ export default function SparesDashboard() {
               </TableHeader>
 
               <TableBody>
-                {filteredAndSortedItems.length === 0 ? (
+                {/* {filteredAndSortedItems.length === 0 ? ( */}
+                {paginatedItems.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={14} className="h-72 text-center">
                       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -478,7 +583,8 @@ export default function SparesDashboard() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredAndSortedItems.map((item) => (
+                  // filteredAndSortedItems.map((item) => (
+                  paginatedItems.map((item) => (
                     <TableRow
                       key={item.id}
                       className={cn(
@@ -498,9 +604,17 @@ export default function SparesDashboard() {
                       <TableCell className="text-muted-foreground">
                         {item.description}
                       </TableCell>
+                      <TableCell>{item.plant}</TableCell>
                       <TableCell>{item.branch}</TableCell>
                       <TableCell>
-                        <div className="inline-flex w-6 h-6 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold">
+                        <div
+                          className={cn(
+                            "inline-flex w-6 h-6 items-center justify-center rounded-full text-white text-xs font-bold",
+                            item.abc === "A" && "bg-red-600",
+                            item.abc === "B" && "bg-orange-500",
+                            item.abc === "C" && "bg-blue-600",
+                          )}
+                        >
                           {item.abc}
                         </div>
                       </TableCell>
@@ -553,15 +667,58 @@ export default function SparesDashboard() {
           </div>
 
           {/* Footer Bar (Production touch) */}
-          <div className="border-t bg-muted/40 px-6 py-3 flex items-center justify-between text-sm text-muted-foreground">
-            <div>{filteredAndSortedItems.length} items shown</div>
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" className="gap-1.5">
-                <MoreHorizontal className="w-4 h-4" />
-                Bulk Actions
+          <div className="border-t bg-muted/40 px-6 py-3 flex flex-col md:flex-row gap-3 md:items-center md:justify-between text-sm">
+            <div>
+              Showing {(currentPage - 1) * Number(pageSize) + 1}
+              {" - "}
+              {Math.min(
+                currentPage * Number(pageSize),
+                filteredAndSortedItems.length,
+              )}{" "}
+              of {filteredAndSortedItems.length}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* PAGE SIZE */}
+              <Select value={pageSize} onValueChange={setPageSize}>
+                <SelectTrigger className="w-[110px] h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* PREVIOUS PAGE */}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+              >
+                <ChevronLeft />
               </Button>
+
+              <span className="px-2 font-medium">
+                {currentPage} / {totalPages || 1}
+              </span>
+
+              {/* NEXT PAGE */}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
+                <ChevronRight />
+              </Button>
+
               {selectedRows.length > 0 && (
-                <div className="text-foreground font-medium">
+                <div className="font-medium text-foreground">
                   {selectedRows.length} selected
                 </div>
               )}
