@@ -33,11 +33,11 @@ const navItems = [
     href: "/pool",
     icon: Shuffle,
   },
-  {
-    name: "Spares Replenishment",
-    href: "/spares",
-    icon: Package,
-  },
+  // {
+  //   name: "Spares Replenishment",
+  //   href: "/spares",
+  //   icon: Package,
+  // },
   {
     name: "Inventory Flow",
     href: "/inventory",
@@ -48,16 +48,16 @@ const navItems = [
     href: "/analytics",
     icon: BarChart2,
   },
-  {
-    name: "Users",
-    href: "/users",
-    icon: Users,
-  },
-  {
-    name: "Settings",
-    href: "/settings",
-    icon: Settings,
-  },
+  // {
+  //   name: "Users",
+  //   href: "/users",
+  //   icon: Users,
+  // },
+  // {
+  //   name: "Settings",
+  //   href: "/settings",
+  //   icon: Settings,
+  // },
 ];
 
 export function Sidebar() {
