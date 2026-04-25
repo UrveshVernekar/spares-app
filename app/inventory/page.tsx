@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,20 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Skeleton Components
+const Skeleton = ({ className }: { className?: string }) => (
+  <div className={cn("animate-pulse bg-muted rounded-md", className)} />
+);
+
+const ShimmerCard = () => (
+  <Card className="shadow-sm border-border">
+    <CardContent className="p-5">
+      <Skeleton className="h-4 w-28 mb-3" />
+      <Skeleton className="h-9 w-32" />
+    </CardContent>
+  </Card>
+);
 
 type PoolSource = {
   branch: string;
@@ -47,6 +61,8 @@ type Indent = {
 
 export default function InventoryDashboard() {
   const [activeStep, setActiveStep] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const steps = [
     { id: 1, name: "Branch Indent" },
@@ -108,6 +124,102 @@ export default function InventoryDashboard() {
       ],
     },
   ];
+
+  // Simulate API/Data Loading (Remove this later when connecting real API)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1200); // Simulate network delay
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ==================== LOADING UI ====================
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-64px)] bg-gray-50/70 dark:bg-zinc-950 p-4 md:p-6 lg:p-8 font-sans">
+        <div className="max-w-[1680px] mx-auto space-y-6">
+          {/* Header Skeleton */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <Skeleton className="h-9 w-80" />
+              <Skeleton className="h-4 w-96 mt-2" />
+            </div>
+            <Skeleton className="h-10 w-52" />
+          </div>
+
+          {/* KPI Cards Skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ShimmerCard key={i} />
+            ))}
+          </div>
+
+          {/* Stepper Skeleton */}
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton
+                key={i}
+                className="h-14 w-52 rounded-xl flex-shrink-0"
+              />
+            ))}
+          </div>
+
+          {/* Table Skeleton */}
+          <Card className="shadow-sm border-border overflow-hidden">
+            <div className="p-6 border-b bg-muted/30">
+              <Skeleton className="h-8 w-64" />
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-muted/60">
+                  <TableRow>
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <TableHead key={i}>
+                        <Skeleton className="h-5 w-28" />
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 5 }).map((_, row) => (
+                    <TableRow key={row}>
+                      {Array.from({ length: 12 }).map((_, col) => (
+                        <TableCell key={col}>
+                          <Skeleton className="h-7 w-full" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // ==================== ERROR UI ====================
+  if (error) {
+    return (
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50/70 dark:bg-zinc-950">
+        <div className="text-center max-w-md">
+          <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-950 rounded-full flex items-center justify-center mb-6">
+            <span className="text-4xl">⚠️</span>
+          </div>
+          <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400 mb-2">
+            Failed to Load Inventory Data
+          </h2>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <Button onClick={() => window.location.reload()} size="lg">
+            Retry Loading
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gray-50/70 dark:bg-zinc-950 p-4 md:p-6 lg:p-8 font-sans">
