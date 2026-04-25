@@ -62,6 +62,19 @@ type Item = {
   trend: boolean;
 };
 
+const Skeleton = ({ className }: { className?: string }) => (
+  <div className={cn("animate-pulse bg-muted rounded-md", className)} />
+);
+
+const ShimmerCard = () => (
+  <Card className="shadow-sm border-border">
+    <CardContent className="p-5">
+      <Skeleton className="h-4 w-24 mb-3" />
+      <Skeleton className="h-9 w-32" />
+    </CardContent>
+  </Card>
+);
+
 export default function SparesDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("all");
@@ -310,11 +323,109 @@ export default function SparesDashboard() {
   }, [filteredAndSortedItems]);
 
   if (loading) {
-    return <div className="p-10">Loading...</div>;
+    return (
+      <div className="min-h-[calc(100vh-64px)] bg-gray-50/70 dark:bg-zinc-950 p-4 md:p-6 lg:p-8 font-sans">
+        <div className="max-w-[1680px] mx-auto space-y-6">
+          {/* Header Skeleton */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <Skeleton className="h-9 w-80" />
+              <Skeleton className="h-4 w-96 mt-2" />
+            </div>
+            <div className="flex gap-3">
+              <Skeleton className="h-9 w-28" />
+              <Skeleton className="h-9 w-32" />
+            </div>
+          </div>
+
+          {/* KPI Cards Skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ShimmerCard key={i} />
+            ))}
+          </div>
+
+          {/* Info Panel Skeleton */}
+          <Card className="bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <Skeleton className="h-8 w-8 rounded-lg" />
+                <Skeleton className="h-5 w-80" />
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-5 w-full" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Toolbar Skeleton */}
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <div className="flex flex-wrap gap-3">
+              <Skeleton className="h-10 w-80" />
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-36" />
+              <Skeleton className="h-10 w-28" />
+            </div>
+            <Skeleton className="h-10 w-40" />
+          </div>
+
+          {/* Table Skeleton */}
+          <Card className="shadow-sm border-border overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow>
+                    {Array.from({ length: 15 }).map((_, i) => (
+                      <TableHead key={i}>
+                        <Skeleton className="h-4 w-20" />
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 8 }).map((_, row) => (
+                    <TableRow key={row}>
+                      {Array.from({ length: 15 }).map((_, col) => (
+                        <TableCell key={col}>
+                          <Skeleton className="h-6 w-full" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Footer Skeleton */}
+            <div className="border-t bg-muted/40 px-6 py-4 flex justify-between items-center">
+              <Skeleton className="h-5 w-48" />
+              <div className="flex gap-3">
+                <Skeleton className="h-9 w-24" />
+                <Skeleton className="h-9 w-20" />
+                <Skeleton className="h-9 w-12" />
+                <Skeleton className="h-9 w-20" />
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="p-10 text-red-500">{error}</div>;
+    return (
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-2xl mb-2">⚠️</div>
+          <p className="text-xl font-medium text-red-600">{error}</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
