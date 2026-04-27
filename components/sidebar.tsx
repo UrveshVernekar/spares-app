@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Package,
+  Binoculars,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -43,10 +44,15 @@ const navItems = [
     href: "/inventory",
     icon: Inbox,
   },
+  // {
+  //   name: "Analytics",
+  //   href: "/analytics",
+  //   icon: BarChart2,
+  // },
   {
-    name: "Analytics",
-    href: "/analytics",
-    icon: BarChart2,
+    name: "Forecast",
+    href: "/forecast",
+    icon: Binoculars,
   },
   // {
   //   name: "Users",
